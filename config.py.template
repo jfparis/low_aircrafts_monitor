@@ -1,0 +1,16 @@
+LAT = 51.1
+LON = -0.1
+HOME = (LAT, LON)
+
+FEEDER_URL = "http://feeder.local:8080/data/aircraft.json"
+
+THRESHOLD_DIST = 800
+THRESHOLD_ALT = 600
+
+BROKER_ADDRES = "IP"
+BROKER_USER = "login"
+BROKER_PASSWORD = "password
+
+MQTT_ROOT = "homeassistant/sensor/aircraftpasses"
+
+UNIQUE_CLIENT_NAME = "aircraft_monitor"
