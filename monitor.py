@@ -59,7 +59,6 @@ def poll(client, topic):
         earliest_aircraft.strftime("%H:%M") if earliest_aircraft is not None else None
     )
     client.publish(topic, json.dumps(payload))
-    print("updating state on mqtt")
 
 
 def update_config(client, topic_state):
