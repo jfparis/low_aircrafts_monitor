@@ -33,9 +33,15 @@ def poll(client, topic):
 
         if set(each.keys()).issuperset(set(["lat", "lon", "alt_baro", "flight"])):
 
-            plane_cord = (each["lat"], each["lon"])
-            dist = round(geopy.distance.geodesic(config.HOME, plane_cord).m, 0)
-            altitude = round(float(each["alt_baro"]) * 0.3048, 0)
+            try:
+                plane_cord = (each["lat"], each["lon"])  # TODO: add error handling
+                dist = round(geopy.distance.geodesic(config.HOME, plane_cord).m, 0)
+                altitude = round(
+                    float(each["alt_baro"]) * 0.3048, 0
+                )  # add error handling
+            except Exception as err:
+                print(err)
+                next
 
             if altitude <= config.THRESHOLD_ALT and dist < config.THRESHOLD_DIST:
 
