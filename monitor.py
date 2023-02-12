@@ -1,4 +1,5 @@
 import json
+import logging
 import os.path
 import time
 from datetime import datetime
@@ -10,21 +11,26 @@ import requests
 
 import config
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 ttl_cache = cachetools.TTLCache(maxsize=128, ttl=10 * 60)
 count = 0
 earliest_aircraft = None
+latest_aircraft = None
 lowest_aircraft = None
 
 last_run = None
 
 
 def poll(client, topic):
-    global last_run, count, earliest_aircraft, lowest_aircraft
+    global last_run, count, earliest_aircraft, lowest_aircraft, latest_aircraft
     now = datetime.utcnow()
     if last_run is not None and last_run.hour < 3 and now.hour >= 3:
         count = 0
         lowest_aircraft = None
         earliest_aircraft = None
+        latest_aircraft = None
 
     last_run = now
     r = requests.get(config.FEEDER_URL)
@@ -40,7 +46,7 @@ def poll(client, topic):
                     float(each["alt_baro"]) * 0.3048, 0
                 )  # add error handling
             except Exception as err:
-                print(err)
+                logger.exception(err)
                 next
 
             if altitude <= config.THRESHOLD_ALT and dist < config.THRESHOLD_DIST:
@@ -48,23 +54,27 @@ def poll(client, topic):
                 if each["flight"] not in ttl_cache.keys():
 
                     stamp = now.strftime("[%Y-%m-%d %H:%M:%S]")
-                    print(
+                    logger.debug(
                         f"{stamp} LOW PASS : {each['hex']} - {each['flight']} - distance: {dist} - altitude: {altitude}"
                     )
                     count = count + 1
-                    print(f"{stamp} So far today we have had {count} low passes")
+                    logger.debug(f"{stamp} So far today we have had {count} low passes")
 
                     ttl_cache[each["flight"]] = True
 
                     if earliest_aircraft is None:
                         earliest_aircraft = now
+                    latest_aircraft = now
 
     payload = {}
     payload["count"] = count
     payload["earliest_aircraft"] = (
         earliest_aircraft.strftime("%H:%M") if earliest_aircraft is not None else None
     )
-    # payload["friendly_name"] = "Daily counter of low airplane passes"
+    payload["latest_aircraft"] = (
+        latest_aircraft.strftime("%H:%M") if latest_aircraft is not None else None
+    )
+
     state_topic = os.path.join(topic, "state")
     client.publish(state_topic, json.dumps(payload))
 
