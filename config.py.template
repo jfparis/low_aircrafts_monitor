@@ -11,6 +11,5 @@ BROKER_ADDRES = "IP"
 BROKER_USER = "login"
 BROKER_PASSWORD = "password
 
-MQTT_ROOT = "homeassistant/sensor/aircraftpasses"
-
-UNIQUE_CLIENT_NAME = "aircraft_monitor"
+UNIQUE_ID = "aircraft_monitor"
+MQTT_ROOT = "homeassistant/sensor/" + UNIQUE_ID

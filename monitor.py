@@ -64,41 +64,34 @@ def poll(client, topic):
     payload["earliest_aircraft"] = (
         earliest_aircraft.strftime("%H:%M") if earliest_aircraft is not None else None
     )
-    client.publish(topic, json.dumps(payload))
+    # payload["friendly_name"] = "Daily counter of low airplane passes"
+    state_topic = os.path.join(topic, "state")
+    client.publish(state_topic, json.dumps(payload))
 
-
-def update_config(client, topic_state):
     low_aircraft_count_conf = {
-        "name": "low_aircraft_count",
-        "state_topic": topic_state,
+        "object_id": config.UNIQUE_ID,
+        "state_topic": state_topic,
+        "json_attributes_topic": state_topic,
         "state_class": "total_increasing",
-        "icon": "mdi:airplane_landing",
+        "icon": "mdi:airplane-landing",
+        "name": "Daily counter of low airplane passes",
         "value_template": "{{ value_json.count}}",
+        "unique_id": config.UNIQUE_ID,
     }
-    topic_cpu = os.path.join(config.MQTT_ROOT + "Count", "config")
-    client.publish(topic_cpu, json.dumps(low_aircraft_count_conf))
-
-    earliest_aircraft_count_conf = {
-        "name": "earliest_aircraft",
-        "state_topic": topic_state,
-        "icon": "mdi:airplane_clock",
-        "value_template": "{{ value_json.earliest_aircraft}}",
-    }
-    topic_cpu = os.path.join(config.MQTT_ROOT + "Early", "config")
-    client.publish(topic_cpu, json.dumps(earliest_aircraft_count_conf))
+    config_topic = os.path.join(topic, "config")
+    client.publish(config_topic, json.dumps(low_aircraft_count_conf))
 
 
 def main():
-    client = mqtt.Client(config.UNIQUE_CLIENT_NAME)
+    client = mqtt.Client(config.UNIQUE_ID)
     client.username_pw_set(config.BROKER_USER, password=config.BROKER_PASSWORD)
     client.connect(config.BROKER_ADDRES)
     client.loop_start()
 
-    topic_state = os.path.join(config.MQTT_ROOT, "state")
+    topic_state = config.MQTT_ROOT
 
     while True:
         poll(client, topic_state)
-        update_config(client, topic_state)
         time.sleep(5)
 
 
