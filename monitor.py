@@ -25,6 +25,7 @@ last_run = None
 
 def poll(client, topic):
     global last_run, count, earliest_aircraft, lowest_aircraft, latest_aircraft
+
     now = datetime.utcnow()
     if last_run is not None and last_run.hour < 3 and now.hour >= 3:
         count = 0
@@ -33,7 +34,9 @@ def poll(client, topic):
         latest_aircraft = None
 
     last_run = now
+
     r = requests.get(config.FEEDER_URL)
+
     data = r.json()
     for each in data["aircraft"]:
 
@@ -99,10 +102,17 @@ def main():
     client.loop_start()
 
     topic_state = config.MQTT_ROOT
+    nb_failure = 0
 
     while True:
-        poll(client, topic_state)
-        time.sleep(5)
+        try:
+            poll(client, topic_state)
+            nb_failure = 0
+        except requests.exceptions.RequestException as err:
+            logger.exception(err)
+            nb_failure = nb_failure + 1
+
+        time.sleep(5 + min(5, nb_failure) * 60)
 
 
 if __name__ == "__main__":
