@@ -26,7 +26,7 @@ last_run = None
 def poll(client, topic):
     global last_run, count, earliest_aircraft, lowest_aircraft, latest_aircraft
 
-    now = datetime.utcnow(timezone.utc)
+    now = datetime.now(timezone.utc)
     if last_run is not None and last_run.hour < 3 and now.hour >= 3:
         count = 0
         lowest_aircraft = None
