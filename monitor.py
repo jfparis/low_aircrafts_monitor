@@ -2,7 +2,7 @@ import json
 import logging
 import os.path
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 import cachetools
 import geopy.distance
@@ -26,7 +26,7 @@ last_run = None
 def poll(client, topic):
     global last_run, count, earliest_aircraft, lowest_aircraft, latest_aircraft
 
-    now = datetime.utcnow()
+    now = datetime.utcnow(timezone.utc)
     if last_run is not None and last_run.hour < 3 and now.hour >= 3:
         count = 0
         lowest_aircraft = None
@@ -72,10 +72,16 @@ def poll(client, topic):
     payload = {}
     payload["count"] = count
     payload["earliest_aircraft"] = (
-        earliest_aircraft.strftime("%H:%M") if earliest_aircraft is not None else None
+        # earliest_aircraft.strftime("%H:%M") if earliest_aircraft is not None else None
+        earliest_aircraft
+        if earliest_aircraft is not None
+        else None
     )
     payload["latest_aircraft"] = (
-        latest_aircraft.strftime("%H:%M") if latest_aircraft is not None else None
+        # latest_aircraft.strftime("%H:%M") if latest_aircraft is not None else None
+        latest_aircraft
+        if latest_aircraft is not None
+        else None
     )
 
     state_topic = os.path.join(topic, "state")
