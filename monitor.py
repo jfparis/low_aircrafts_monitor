@@ -85,7 +85,7 @@ def poll(client, topic):
     )
 
     state_topic = os.path.join(topic, "state")
-    client.publish(state_topic, json.dumps(payload))
+    client.publish(state_topic, json.dumps(payload, default=str))
 
     low_aircraft_count_conf = {
         "object_id": config.UNIQUE_ID,
