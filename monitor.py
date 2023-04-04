@@ -50,7 +50,7 @@ def poll(client, topic):
                 )  # add error handling
             except Exception as err:
                 logger.exception(err)
-                next
+                continue
 
             if altitude <= config.THRESHOLD_ALT and dist < config.THRESHOLD_DIST:
 
