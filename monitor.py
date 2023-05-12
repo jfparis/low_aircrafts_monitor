@@ -39,9 +39,7 @@ def poll(client, topic):
 
     data = r.json()
     for each in data["aircraft"]:
-
         if set(each.keys()).issuperset(set(["lat", "lon", "alt_baro", "flight"])):
-
             try:
                 plane_cord = (each["lat"], each["lon"])  # TODO: add error handling
                 dist = round(geopy.distance.geodesic(config.HOME, plane_cord).m, 0)
@@ -53,9 +51,7 @@ def poll(client, topic):
                 continue
 
             if altitude <= config.THRESHOLD_ALT and dist < config.THRESHOLD_DIST:
-
                 if each["flight"] not in ttl_cache.keys():
-
                     stamp = now.strftime("[%Y-%m-%d %H:%M:%S]")
                     logger.debug(
                         f"{stamp} LOW PASS : {each['hex']} - {each['flight']} - distance: {dist} - altitude: {altitude}"
@@ -102,23 +98,33 @@ def poll(client, topic):
 
 
 def main():
-    client = mqtt.Client(config.UNIQUE_ID)
-    client.username_pw_set(config.BROKER_USER, password=config.BROKER_PASSWORD)
-    client.connect(config.BROKER_ADDRES)
-    client.loop_start()
-
-    topic_state = config.MQTT_ROOT
-    nb_failure = 0
-
+    nb_overall_failure = 0
     while True:
         try:
-            poll(client, topic_state)
-            nb_failure = 0
-        except requests.exceptions.RequestException as err:
-            logger.exception(err)
-            nb_failure = nb_failure + 1
+            client = mqtt.Client(config.UNIQUE_ID)
+            client.username_pw_set(config.BROKER_USER, password=config.BROKER_PASSWORD)
+            client.connect(config.BROKER_ADDRES)
+            client.loop_start()
 
-        time.sleep(5 + min(5, nb_failure) * 60)
+            topic_state = config.MQTT_ROOT
+            nb_poll_failure = 0
+
+            while True:
+                try:
+                    poll(client, topic_state)
+                    nb_poll_failure = 0
+                    nb_overall_failure = 0
+                except requests.exceptions.RequestException as err:
+                    logger.exception(err)
+                    nb_poll_failure = nb_poll_failure + 1
+
+                time.sleep(5 + min(5, nb_poll_failure) * 60)
+
+        except Exception as err:
+            logger.exception(err)
+            nb_overall_failure = nb_overall_failure + 1
+
+        time.sleep(5 + min(5, nb_overall_failure) * 60)
 
 
 if __name__ == "__main__":
