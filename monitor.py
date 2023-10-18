@@ -12,7 +12,19 @@ import requests
 import config
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(config.LOG_LEVEL)
+# create console handler and set level to debug
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+
+# create formatter
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+# add formatter to ch
+ch.setFormatter(formatter)
+
+# add ch to logger
+logger.addHandler(ch)
 
 ttl_cache = cachetools.TTLCache(maxsize=128, ttl=10 * 60)
 count = 0
@@ -38,6 +50,7 @@ def poll(client, topic):
     r = requests.get(config.FEEDER_URL)
 
     data = r.json()
+    logger.debug(f'Processing {len(data["aircraft"])} records')
     for each in data["aircraft"]:
         if set(each.keys()).issuperset(set(["lat", "lon", "alt_baro", "flight"])):
             try:
@@ -52,18 +65,23 @@ def poll(client, topic):
 
             if altitude <= config.THRESHOLD_ALT and dist < config.THRESHOLD_DIST:
                 if each["flight"] not in ttl_cache.keys():
-                    stamp = now.strftime("[%Y-%m-%d %H:%M:%S]")
                     logger.debug(
-                        f"{stamp} LOW PASS : {each['hex']} - {each['flight']} - distance: {dist} - altitude: {altitude}"
+                        f"LOW PASS : {each['hex']} - {each['flight']} - distance: {dist} - altitude: {altitude}"
                     )
                     count = count + 1
-                    logger.debug(f"{stamp} So far today we have had {count} low passes")
+                    logger.debug(f"So far today we have had {count} low passes")
 
                     ttl_cache[each["flight"]] = True
 
                     if earliest_aircraft is None:
                         earliest_aircraft = now
                     latest_aircraft = now
+            elif altitude <= (config.THRESHOLD_ALT * 2) and dist < (
+                config.THRESHOLD_DIST * 2
+            ):
+                logger.debug(
+                    f"NOT LOW PASS : {each['hex']} - {each['flight']} - distance: {dist} - altitude: {altitude}"
+                )
 
     payload = {}
     payload["count"] = count
