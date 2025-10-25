@@ -102,7 +102,7 @@ def poll(client, topic):
     client.publish(state_topic, json.dumps(payload, default=str))
 
     low_aircraft_count_conf = {
-        "object_id": config.UNIQUE_ID,
+        "entity_id": config.UNIQUE_ID,
         "state_topic": state_topic,
         "json_attributes_topic": state_topic,
         "state_class": "total_increasing",
